@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Thin Film Reflectance Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      margin: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #results {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>Thin Film Reflectance Calculator</h1>
+
+    <label for="n_f">Refractive Index of Thin Film (n_f):</label>
+    <input type="number" id="n_f" value="1.5">
+
+    <label for="k_f">Extinction Coefficient of Thin Film (k_f):</label>
+    <input type="number" id="k_f" value="0">
+
+    <label for="n_s">Refractive Index of Substrate (n_s):</label>
+    <input type="number" id="n_s" value="1.45">
+
+    <label for="data_source">Data Source:</label>
+    <select id="data_source">
+      <option value="manual">Manual Input</option>
+      <option value="file">CSV File</option>
+    </select>
+
+    <div id="manual_input" style="display: none;">
+      <label for="wavelengths">Wavelengths (nm):</label>
+      <textarea id="wavelengths" rows="5" cols="30"></textarea>
+
+      <label for="reflectances">Reflectances:</label>
+      <textarea id="reflectances" rows="5" cols="30"></textarea>
+    </div>
+
+    <div id="file_input" style="display: none;">
+      <label for="file_path">CSV File Path:</label>
+      <input type="text" id="file_path">
+    </div>
+
+    <button id="calculate">Calculate</button>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const n_fInput = document.getElementById('n_f');
+    const k_fInput = document.getElementById('k_f');
+    const n_sInput = document.getElementById('n_s');
+    const dataSourceSelect = document.getElementById('data_source');
+    const manualInput = document.getElementById('manual_input');
+    const fileInput = document.getElementById('file_input');
+    const wavelengthsInput = document.getElementById('wavelengths');
+    const reflectancesInput = document.getElementById('reflectances');
+    const filePathInput = document.getElementById('file_path');
+    const calculateButton = document.getElementById('calculate');
+    const resultsDiv = document.getElementById('results');
+
+    dataSourceSelect.addEventListener('change', () => {
+      if (dataSourceSelect.value === 'manual') {
+        manualInput.style.display = 'block';
+        fileInput.style.display = 'none';
+      } else {
+        manualInput.style.display = 'none';
+        fileInput.style.display = 'block';
+      }
+    });
+
+    calculateButton.addEventListener('click', () => {
+      const n_f = parseFloat(n_fInput.value);
+      const k_f = parseFloat(k_fInput.value);
+      const n_s = parseFloat(n_sInput.value);
+
+      let wavelengths, reflectances;
+
+      if (dataSourceSelect.value === 'manual') {
+        wavelengths = wavelengthsInput.value.split('\n').map(parseFloat);
+        reflectances = reflectancesInput.value.split('\n').map(parseFloat);
+      } else {
+        // Implement file reading logic here
+        // ...
+      }
+
+      // Send data to server for calculation
+      fetch('/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          n_f: n_f,
+          k_f: k_f,
+          n_s: n_s,
+          wavelengths: wavelengths,
+          reflectances: reflectances
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        resultsDiv.innerHTML = `
+          <h2>Fitted Parameters:</h2>
+          <p>Refractive index of the thin film (n_f) = ${data.n_f_fitted.toFixed(4)}</p>
+          <p>Extinction coefficient of the thin film (k_f) = ${data.k_f_fitted.toFixed(4)}</p>
+          <p>Refractive index of the substrate (n_s) = ${data.n_s_fitted.toFixed(4)}</p>
+          <p>Thickness of the thin film (d) = ${data.d_fitted.toFixed(2)} nm</p>
+          <p>Phase shift = ${data.phase_shift_fitted.toFixed(4)}</p>
+        `;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        resultsDiv.innerHTML = 'An error occurred during calculation.';
+      });
+    });
+  </script>
+</body>
+</html>
